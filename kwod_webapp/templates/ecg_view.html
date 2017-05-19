@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>KWOD</title>
+
+        <!-- Biblioteka do wykresów: http://dygraphs.com/ -->
+        <script src="/static/dygraph-combined.js"></script>
+        <!-- Biblioteki dla komponentu do wybierania przedziału czasu -->
+        <script type="text/javascript" src="/static/jquery-3.1.1.min.js"></script>
+        <link rel="stylesheet" href="/static/semantic/semantic.min.css"/>
+        <script type="text/javascript" src="/static/semantic/semantic.min.js"></script>
+        <script type="text/javascript" src="/static/duration-picker/jquery-duration-picker.js"></script>
+        <link rel="stylesheet" href="/static/duration-picker/jquery-duration-picker.css"/>
+        <!-- Javascript obsługujący stronę z widokiem ECG -->
+        <script src="/static/ecg_view.js"></script>
+
+        <link rel="stylesheet" href="/static/style.css">
+    </head>
+
+    <body>
+        <header><h1>Wizualizacja danych z badania № {{ recording.id }}</h1></header>
+
+        <ul class="backToMain-button">
+            <li><a href="/">Powrót</a></li>
+        </ul>
+
+        <div class="main">
+            <h2>Wykres</h2>
+            <div id="time-picker">
+                <div class="ui input">
+                    <span style="margin: auto; padding-right: 5px">Od:</span>
+                    <input type="text" id="start-time-picker" class="duration-picker" value="0">
+                </div>
+                <div class="ui input">
+                    <span style="margin: auto; padding-right: 5px">Do:</span>
+                    <input type="text" id="end-time-picker" class="duration-picker" value="30">
+                </div>
+
+                <button id="change-time-range-button">Wczytaj</button>
+            </div>
+
+            <div id="graphs">
+                {% for algorithm_name in r_waves_from_algorithms.keys() %}
+                <div>
+                    <h3>{{ algorithm_name }}</h3>
+                    <div id="graph_{{ algorithm_name }}" style="width: 100%; margin: 30px auto 60px auto;"></div>
+                    <div>
+                        <h2>Podstawowa analiza RR</h2>
+                        <table>
+                            <tr>
+                                <th>Numer odprowadzenia</th>
+                                <th>Odstęp RR [s]</th>
+                                <th>Liczba uderzeń [1/s]</th>
+                                <th>Diagnoza</th>
+                            </tr>
+                            {% for rr_means_for_plot in RR_means[algorithm_name] %}
+                            <tr>
+                                <td>Odprowadzenie {{ loop.index }}</td>
+                                <td id="rr_means_distance_{{ loop.index - 1}}">{{ rr_means_for_plot['distance'] }}</td>
+                                <td id="rr_means_frequency_{{ loop.index - 1}}">{{ rr_means_for_plot['frequency'] }}</td>
+                                <td id="rr_means_diagnosis_{{ loop.index - 1}}">{{ rr_means_for_plot['diagnosis'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <script>
+                initDygraph({{ recording.id }}, {{ recording_data }}, {{ r_waves_from_algorithms | safe }});
+                $('.duration-picker').duration_picker();
+                initClickOnDurationPickers();
+            </script>
+
+            <h2>Informacje o badaniu: </h2>
+            <table>
+                <thead><tr><th>Parametr</th><th>Wartość</th></tr></thead>
+                <tbody>
+                    <tr><td>Imię i nazwisko pacjenta:</td><td>{{ recording.patient.name }} {{ recording.patient.surname }}</td></tr>
+                    <tr><td>Nazwa badania:</td><td>{{ recording.name }}</td></tr>
+                    <tr><td>Czas rozpoczęcia badania:</td> <td>{{ recording.timestamp }}</td></tr>
+                    <tr><td>Liczba odprowadzeń:</td><td>{{ recording.plot_count }}</td></tr>
+                    <tr><td>Częstotliwość próbkowania:</td> <td>{{ recording.frequency }} [Hz]</td></tr>
+                    <tr><td>Czas trwania badania:</td><td>{{recording.frequency * recording.sample_count}}[s]</td></tr>
+                </tbody>
+            </table>
+
+            <h2>Komentarz do badania:</h2>
+            <div class="dashed">
+                <div>
+                    <p><i>{{ recording.comment.replace("\n\n", "\n").replace("\n", "<br>") | safe }}</i></p>
+                </div>
+            </div>
+        <div>
+    </body>
+</html>

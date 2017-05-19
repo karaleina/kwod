@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>KWOD</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Javascript obsługujący stronę z widokiem ECG -->
+    <script src="/static/main.js"></script>
+</head>
+<body>
+
+<!-- dialog box -->
+<div id="white-background">
+</div>
+<div id="dlgbox">
+    <div id="dlg-header">Dodaj badanie.
+        <button title="Close" class="close" onclick="closeDialog()">X</button>
+    </div>
+    <div id="dlg-body">
+        <form id="uploadData" action="/new_patient" method=post enctype=multipart/form-data onsubmit="return validateForm()">
+            <table>
+                <tr><td>Imię:</td><td><input id="dlgName" type="text" name="name"></td>
+                <tr><td>Nazwisko:</td><td><input id="dlgSurname" type="text" name="surname"></td></tr>
+                <tr><td>Plik .hea:</td><td><input id="dlgFileHeader" type="file" name="fileHeader" ></td></tr>
+                <tr><td>Plik .dat:</td><td><input id="dlgFileDat" type="file" name="fileDat"></td></tr>
+
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" value="Dodaj" class="big-button">
+                        <input type="reset" class="big-button" onclick="ClearDialogFields()" value="Wyczyść" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <div id="dlg-footer">
+    </div>
+</div>
+<header><h1> Lista dostępnych rekordów badań </h1></header>
+<ul class="addPatient-button">
+    <li><a href="#" onclick="showDialog()">Dodaj Badanie</a></li>
+</ul>
+<!-- script of dialog -->
+
+<div class="main">
+    <h2>Wyszukiwanie</h2>
+    <form method="get" action="/">
+        <table>
+            <tr><td>Imię:</td><td><input type="text" name="name" value="{{ request.args.get("name") or "" }}"></td>
+            <tr><td>Nazwisko:</td><td><input type="text" name="surname" value="{{ request.args.get("surname") or "" }}"></td></tr>
+            <tr>
+                <td>Data badania:</td>
+                <td>
+                    Od: <input type="date" name="from_date" value="{{ request.args.get("from_date") or "" }}">
+                    Do: <input type="date" name="to_date" value="{{ request.args.get("to_date") or "" }}">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input type="submit" value="Filtruj" class="big-button">
+                    <input type="button" class="big-button" onclick="location.href='/';" value="Wyczyść" />
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+<div class="main">
+    <h2> Lista wykonanych badań EKG  </h2>
+    <table>
+        <thead>
+        <tr><th>№</th><th>Pacjent</th></th><th>Rekord</th><th>Czas badania</th></tr>
+        </thead>
+        <tbody>
+        <!-- Jinja - język szablonów zintegrowany z Flaskiem -->
+        {% for recording in recordings %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ recording.patient.name }} {{ recording.patient.surname }}</td>
+            <td><i><a href="/recordings/{{recording.id}}/view" target="_blank">{{ recording.name }}</i></a></td>
+            <td><i>{{ recording.timestamp }}</i></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
