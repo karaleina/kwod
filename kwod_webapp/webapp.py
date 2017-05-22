@@ -64,7 +64,7 @@ def show_recording(recording_id):
     # Tutaj pobieram z bazy rekord o zadanym id i dostaję obiekt
     recording = ECGRecording.query.get(recording_id)
     recording_data_with_time = get_raw_recording_data(recording, 0, 10)
-    recording_true_qrs_with_time = get_recording_true_qrs_with_time(recording)
+    true_qrs_with_time = get_recording_true_qrs_with_time(recording)
 
     r_waves_from_algorithms = calculate_qrs_labels(recording, recording_data_with_time)
 
@@ -73,15 +73,12 @@ def show_recording(recording_id):
         for algorithm_name, labels in r_waves_from_algorithms.items()
     }
 
-    print(RR_means)
+    quality = {
+       algorithm_name: calculate_quality(recording.plot_count, true_qrs_with_time, r_waves_from_algorithms[algorithm_name])
+       for algorithm_name, labels in r_waves_from_algorithms.items()
+       }
 
-
-    # quality = {
-    #    algorithm_name: calculate_quality(recording.plot_count, recording_true_qrs_with_time, r_waves_from_algorithms[algorithm_name])
-    #    for algorithm_name, labels in r_waves_from_algorithms.items()
-    #    }
-    #
-    # print(quality)
+    print(quality)
 
     return render_template(
         'ecg_view.html',
@@ -158,10 +155,16 @@ def calculate_rr(plot_count, labels):
 
 
 
-def calculate_quality(plot_count, raw_data_time,  labels):
-    quality_per_plot = [[] for i in range(0, plot_count)]
+def calculate_quality(plot_count, raw_R_waves_time,  labels):
+    czasy_zalamkow_rr_per_plot = [[] for i in range(0, plot_count)]
+    for zalamek in labels:
+        if zalamek['type'] == 'R':
+            plot_id = zalamek['plotId']
+            czas_zalamka = zalamek['time']
+            czasy_zalamkow_rr_per_plot[plot_id].append(czas_zalamka)
+
     compare = qrs_compare.QRSCompare()
-    [sensitivity, specifity] = compare.compare_segmentation(raw_data_time, labels)
+    [sensitivity, specifity] = compare.compare_segmentation(raw_R_waves_time, czasy_zalamkow_rr_per_plot[plot_id])
     return [rr_quality_info(sensitivity, specifity)]
 
 
