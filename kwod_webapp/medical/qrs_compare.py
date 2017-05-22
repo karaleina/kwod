@@ -8,10 +8,19 @@ class QRSCompare(object):
 
    def compare_segmentation(self, reference=None, test=None,
                             sampling_rate=250, tol_time=0.05):
+        max_test = max(test)
+        min_test = min(test)
+        new_reference = []
+
+        # Ograniczenie zbioru referencyjnego do potrzeb
+        for element in reference:
+            if (element <= max_test and element >= min_test) :
+                new_reference.append(element)
+
 
         # 1 krok: znalezienie TP
         TP = []
-        for element in reference:
+        for element in new_reference:
             for item in test:
                 potential_TP = None
                 min_diff = None
@@ -33,7 +42,7 @@ class QRSCompare(object):
 
         # 3 krok: znalezienie FN
         FN = []
-        for element in reference:
+        for element in new_reference:
             is_potential_FN = True
             for item in test:
                 if item <= (element+tol_time) and item >= (element-tol_time):
@@ -46,9 +55,9 @@ class QRSCompare(object):
         # ograniczam liczbę TN, aby punkty mało istotne nie zdominowały statystyki
         TN = []
         not_qrs = []
-        for indeks, element in enumerate(reference):
-            if indeks < (len(reference) - 1) :
-                 not_qrs.append(reference[indeks + 1] + (reference[indeks + 1] - reference[indeks])/2)
+        for indeks, element in enumerate(new_reference):
+            if indeks < (len(new_reference) - 1) :
+                 not_qrs.append(new_reference[indeks + 1] + (new_reference[indeks + 1] - new_reference[indeks]) / 2)
 
 
         #print("Not QRS: ", not_qrs)
@@ -61,6 +70,28 @@ class QRSCompare(object):
             if is_potential_TN:
                 TN.append(element)
 
-        sensivity = len(TP)/(len(TP)+len(FN))
-        specifity = len(TN)/(len(TN)+len(FP))
+        print("-------------------------------------------------------------------------------------------")
+
+        sensivity = len(TP) / (len(TP) + len(FN))
+        specifity = len(TN) / (len(TN) + len(FP))
+
+        print("REFERENCJA", new_reference)
+        print("TEST", test)
+
+        print("TP", TP)
+        print("FP", FP)
+        print("TN", TN)
+        print("FN", FN)
+
+        print("len TP", len(TP))
+        print("len FP", len(FP))
+        print("len TN", len(TN))
+        print("len FN", len(FN))
+
+        print("sensitivity: ", sensivity)
+        print("specifity:", specifity)
+
+        print("-------------------------------------------------------------------------------------------")
+
+
         return [sensivity, specifity]

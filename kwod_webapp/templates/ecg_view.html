@@ -26,7 +26,7 @@
         </ul>
 
         <div class="main">
-            <h2>Wykres</h2>
+
             <div id="time-picker">
                 <div class="ui input">
                     <span style="margin: auto; padding-right: 5px">Od:</span>
@@ -43,29 +43,33 @@
             <div id="graphs">
                 {% for algorithm_name in r_waves_from_algorithms.keys() %}
                 <div>
-                    <h3>{{ algorithm_name }}</h3>
+                    <h2>{{ algorithm_name }}</h2>
                     <div id="graph_{{ algorithm_name }}" style="width: 100%; margin: 30px auto 60px auto;"></div>
                     <div>
-                        <h2>Podstawowa analiza RR</h2>
                         <table>
                             <tr>
                                 <th>Numer odprowadzenia</th>
                                 <th>Odstęp RR [s]</th>
                                 <th>Liczba uderzeń [1/s]</th>
-                                <th>Diagnoza</th>
+                                <th>Proponowana diagnoza</th>
                                 <th class="rr_means_sensitivity">Czułość metody</th>
                                 <th class="rr_means_specifity">Specyficzność metody</th>
                             </tr>
-                            {% for rr_means_for_plot in RR_means[algorithm_name] %}
+
+                            {% for row in table_row[algorithm_name] %}
                             <tr>
                                 <td>Odprowadzenie {{ loop.index }}</td>
-                                <td id="rr_means_distance_{{ loop.index - 1}}">{{ rr_means_for_plot['distance'] }}</td>
-                                <td id="rr_means_frequency_{{ loop.index - 1}}">{{ rr_means_for_plot['frequency'] }}</td>
-                                <td id="rr_means_diagnosis_{{ loop.index - 1}}">{{ rr_means_for_plot['diagnosis'] }}</td>
-                                <!--<td id="rr_means_sensitivity_{{ loop.index - 1}}">{{ rr_means_for_plot['sensitivity'] }}</td>
-                                <td id="rr_means_specifity_{{ loop.index - 1}}">{{ rr_means_for_plot['specifity'] }}</td>-->
+                                <td id="rr_means_distance_{{ loop.index - 1}}">{{ row['distance'] }}</td>
+                                <td id="rr_means_frequency_{{ loop.index - 1}}">{{ row['frequency'] }}</td>
+                                <td id="rr_means_diagnosis_{{ loop.index - 1}}">{{ row['diagnosis'] }}</td>
+                                <td id="quality_sensitivity_{{ loop.index - 1}}">{{ row['sensitivity'] }}</td>
+                                <td id="quality_specifity_{{ loop.index - 1}}">{{ row['specifity'] }}</td>
                             </tr>
+
                             {% endfor %}
+
+
+
                         </table>
                     </div>
                 </div>

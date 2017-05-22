@@ -63,30 +63,24 @@ def recording_list():
 def show_recording(recording_id):
     # Tutaj pobieram z bazy rekord o zadanym id i dostaję obiekt
     recording = ECGRecording.query.get(recording_id)
-    recording_data_with_time = get_raw_recording_data(recording, 0, 10)
+    recording_data_with_time = get_raw_recording_data(recording, 0, 30)
     true_qrs_with_time = get_recording_true_qrs_with_time(recording)
 
     r_waves_from_algorithms = calculate_qrs_labels(recording, recording_data_with_time)
 
-    RR_means = {
-        algorithm_name: calculate_rr(recording.plot_count, r_waves_from_algorithms[algorithm_name])
-        for algorithm_name, labels in r_waves_from_algorithms.items()
-    }
 
-    quality = {
-       algorithm_name: calculate_quality(recording.plot_count, true_qrs_with_time, r_waves_from_algorithms[algorithm_name])
-       for algorithm_name, labels in r_waves_from_algorithms.items()
+    table_row = {
+       algorithm_name: calculate_rr_and_quality(recording.plot_count, true_qrs_with_time, r_waves_from_algorithms[algorithm_name])
+                        for algorithm_name, labels in r_waves_from_algorithms.items()
        }
 
-    print(quality)
 
     return render_template(
         'ecg_view.html',
         recording=recording,
         recording_data=recording_data_with_time,
         r_waves_from_algorithms=r_waves_from_algorithms,
-        RR_means=RR_means
-
+        table_row=table_row
     )
 
 @app.route("/new_patient", methods=['POST'])
@@ -130,79 +124,84 @@ def get_recording_data(recording_id):
     recording = ECGRecording.query.get(recording_id)
     recording_data_with_time = get_raw_recording_data(recording, start_time, end_time)
     r_waves_from_algorithms = calculate_qrs_labels(recording, recording_data_with_time)
-    RR_means = {
-        algorithm_name: calculate_rr(recording.plot_count, r_waves_from_algorithms[algorithm_name])
+    true_qrs_with_time = get_recording_true_qrs_with_time(recording)
+
+    table_row = {
+        algorithm_name: calculate_rr_and_quality(recording.plot_count, true_qrs_with_time,
+                                                 r_waves_from_algorithms[algorithm_name])
         for algorithm_name, labels in r_waves_from_algorithms.items()
-    }
+        }
 
     return jsonify({
         "recordingData": recording_data_with_time,
         "r_waves_from_algorithms": r_waves_from_algorithms,
-        "RR_means": RR_means
+        "table_row": table_row
     })
 
 
-def calculate_rr(plot_count, labels):
+def calculate_rr_and_quality(plot_count, raw_R_waves_time,  labels):
     czasy_zalamkow_rr_per_plot = [[] for i in range(0, plot_count)]
     for zalamek in labels:
         if zalamek['type'] == 'R':
             plot_zalamka = zalamek['plotId']
             czas_zalamka = zalamek['time']
             czasy_zalamkow_rr_per_plot[plot_zalamka].append(czas_zalamka)
-    return [rr_means_info(float(sum_of_differences(czasy_zalamkow)) / float(len(czasy_zalamkow)-1))
-            for czasy_zalamkow in czasy_zalamkow_rr_per_plot]
-
-
-
-
-def calculate_quality(plot_count, raw_R_waves_time,  labels):
-    czasy_zalamkow_rr_per_plot = [[] for i in range(0, plot_count)]
-    for zalamek in labels:
-        if zalamek['type'] == 'R':
-            plot_id = zalamek['plotId']
-            czas_zalamka = zalamek['time']
-            czasy_zalamkow_rr_per_plot[plot_id].append(czas_zalamka)
 
     compare = qrs_compare.QRSCompare()
-    [sensitivity, specifity] = compare.compare_segmentation(raw_R_waves_time, czasy_zalamkow_rr_per_plot[plot_id])
-    return [rr_quality_info(sensitivity, specifity)]
+    quality = [ [] for i in range (0, len(czasy_zalamkow_rr_per_plot))]
+    for plot_id in range(len(czasy_zalamkow_rr_per_plot)):
+        quality[plot_id] = compare.compare_segmentation(raw_R_waves_time, czasy_zalamkow_rr_per_plot[plot_id])
+
+    print("quality: ", quality)
+
+
+    return [rr_means_and_quality_info(float(sum_of_differences(czasy_zalamkow)) / float(len(czasy_zalamkow)-1), quality[index][0], quality[index][1]) for (index, czasy_zalamkow) in enumerate(czasy_zalamkow_rr_per_plot)]
+
+
 
 
 def rr_quality_info(sensitivity, specifity):
 
     return {
-        'sensitivity': sensitivity,
-        'specifity': specifity
+
     }
 
 
 
-def rr_means_info(rr_means):
+def rr_means_and_quality_info(rr_means, sensitivity, specifity):
 
     if rr_means == 0:
         return {
             'distance': 'brak danych',
             'frequency': 'brak danych',
-            'diagnosis': 'brak danych'
+            'diagnosis': 'brak danych',
+            'sensitivity': 'brak danych',
+            'specifity': 'brak danych'
         }
     else:
         if 60.0/rr_means > 100:
             return {
                 'distance': rr_means,
                 'frequency': 60.0 / rr_means,
-                'diagnosis': 'tachykardia'
+                'diagnosis': 'tachykardia',
+                'sensitivity': sensitivity,
+                'specifity': specifity
             }
         if 60.0/rr_means < 60 :
             return {
                 'distance': rr_means,
                 'frequency': 60.0 / rr_means,
-                'diagnosis': 'bradykardia'
+                'diagnosis': 'bradykardia',
+                'sensitivity': sensitivity,
+                'specifity': specifity
             }
         else:
             return {
                 'distance': rr_means,
                 'frequency': 60.0 / rr_means,
-                'diagnosis': 'norma'
+                'diagnosis': 'norma',
+                'sensitivity': sensitivity,
+                'specifity': specifity
         }
 
 def sum_of_differences(array):
@@ -254,7 +253,6 @@ def calculate_qrs_labels(recording, recording_data_with_time):
             for zalamek_r in zalamki_r:
                 r_waves.append({"plotId": plot_id, "type": "R", "time": recording_data_with_time[zalamek_r][0]})
 
-        print("Typ: ", type(r_waves))
         algorithm_results[algorithm.name()] = r_waves
     return algorithm_results
 

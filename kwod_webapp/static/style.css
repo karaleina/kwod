@@ -80,17 +80,19 @@ h2 {
 	margin: 0 auto 0 auto;
 }
 
+
+
 h2 strong {
 	front-weight: 80;
 }
+
 
 h3 {
 	font-size: 1.75em;/*28px*/
 	font-weight: normal;
 	text-align: center;
-	border-bottom: 1px solid #555555;
-	font-family: Calibri, Tahoma, sans-serif;
 	margin: 20px 0 20px 0;
+	font-family: Raleway, Calibri, Tahoma, sans-serif;
 }
 
 
