@@ -1,24 +1,67 @@
+import numpy as np
+from biosppy import ecg
+from kwod_webapp.medical.qrs_detector import QRSDetector
+
+#Dziedziczenie?
 class Algorithm(object):
     def name(self):
         raise NotImplementedError()
     def detect_r_waves(self, channel):
         raise NotImplementedError()
 
-
-class Algorithm1(object):
+class Christov(object):
     def name(self):
-        return "Algorithm 1"
+        return "Christov"
 
     def detect_r_waves(self, channel):
-        return [1005, 2005]
+        return np.array(ecg.christov_segmenter(channel, sampling_rate=250))[0]
 
-
-class Algorithm2(object):
+class Ssf(object):
     def name(self):
-        return "Algorithm 2"
+        return "SSF"
 
     def detect_r_waves(self, channel):
-        return [100, 600, 900, 3000]
+        return np.array(ecg.ssf_segmenter(channel, sampling_rate=250))[0]
+
+class Thompkins(object):
+    def name(self):
+        return "Pan-Thompkins"
+
+    def detect_r_waves(self, channel):
+
+        detector = QRSDetector()
+        a = detector.detect_qrs(channel)
+        b = a[0]
+        r_waves_thompkins_chann = []
+        for element in b: r_waves_thompkins_chann.append(element[0])
+        return r_waves_thompkins_chann
+
+#z tym się krzaczy
+# #class Gamboa(object):
+#     def name(self):
+#         return "Gamboa"
+#
+#     def detect_r_waves(self, channel):
+#         return np.array(ecg.gamboa_segmenter(channel, sampling_rate=250))[0]
+
+# class Engzee(object):
+#     def name(self):
+#         return "Engzee"
+#
+#     def detect_r_waves(self, channel):
+#         print(ecg.hamilton_segmenter(channel, sampling_rate=250))
+#
+#         return np.array(ecg.hamilton_segmenter(channel, sampling_rate=250))[0]
+#
+# class Hamilton(object):
+#     def name(self):
+#         return "Hamilton"
+#
+#     def detect_r_waves(self, channel):
+#         return np.array(ecg.hamilton_segmenter(channel, sampling_rate=250))[0]
+#
 
 
-algorithms = [Algorithm1(), Algorithm2()]
+
+
+algorithms = [Christov(), Ssf(), Thompkins()]
