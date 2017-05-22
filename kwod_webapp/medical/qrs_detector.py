@@ -6,7 +6,7 @@ class QRSDetector(object):
         pass
 
     def detect_qrs(self, samples):
-        print(samples)
+
 
         # krok 1.
         # filtr dolnoprzepustowy

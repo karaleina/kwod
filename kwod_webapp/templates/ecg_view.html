@@ -19,7 +19,7 @@
     </head>
 
     <body>
-        <header><h1>Wizualizacja danych z badania № {{ recording.id }}</h1></header>
+        <header><h1>Porównanie działania algorytmów dla badania № {{ recording.id }}</h1></header>
 
         <ul class="backToMain-button">
             <li><a href="/">Powrót</a></li>
@@ -53,6 +53,8 @@
                                 <th>Odstęp RR [s]</th>
                                 <th>Liczba uderzeń [1/s]</th>
                                 <th>Diagnoza</th>
+                                <th class="rr_means_sensitivity">Czułość metody</th>
+                                <th class="rr_means_specifity">Specyficzność metody</th>
                             </tr>
                             {% for rr_means_for_plot in RR_means[algorithm_name] %}
                             <tr>
@@ -60,6 +62,8 @@
                                 <td id="rr_means_distance_{{ loop.index - 1}}">{{ rr_means_for_plot['distance'] }}</td>
                                 <td id="rr_means_frequency_{{ loop.index - 1}}">{{ rr_means_for_plot['frequency'] }}</td>
                                 <td id="rr_means_diagnosis_{{ loop.index - 1}}">{{ rr_means_for_plot['diagnosis'] }}</td>
+                                <!--<td id="rr_means_sensitivity_{{ loop.index - 1}}">{{ rr_means_for_plot['sensitivity'] }}</td>
+                                <td id="rr_means_specifity_{{ loop.index - 1}}">{{ rr_means_for_plot['specifity'] }}</td>-->
                             </tr>
                             {% endfor %}
                         </table>
@@ -86,13 +90,6 @@
                     <tr><td>Czas trwania badania:</td><td>{{recording.frequency * recording.sample_count}}[s]</td></tr>
                 </tbody>
             </table>
-
-            <h2>Komentarz do badania:</h2>
-            <div class="dashed">
-                <div>
-                    <p><i>{{ recording.comment.replace("\n\n", "\n").replace("\n", "<br>") | safe }}</i></p>
-                </div>
-            </div>
-        <div>
     </body>
+
 </html>

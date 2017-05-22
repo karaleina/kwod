@@ -5,6 +5,7 @@
 import os
 from datetime import datetime
 from flask import Flask, jsonify, render_template, request
+from wfdbtools import rdann, rdsamp
 from flask import url_for
 from werkzeug.utils import secure_filename, redirect
 
@@ -12,9 +13,10 @@ from kwod_webapp.algorithms.r_wave_detection import algorithms
 from kwod_webapp.parsers.header_parser import HeaderParser
 from kwod_webapp.database.configuration import db
 from kwod_webapp.database.models import ECGPatient, ECGRecording
-from kwod_webapp.medical.qrs_detector import QRSDetector
+from kwod_webapp.medical import qrs_detector, qrs_compare
 from kwod_webapp.parsers.ecg_recording_data_parser import ECGRecordingDataParser
 from kwod_webapp.database.db_search import findOrCreateNewPatient
+from math import nan
 # Konstruktor klasy Flask - reprezentuje aplikację webową
 app = Flask(__name__)
 
@@ -61,7 +63,9 @@ def recording_list():
 def show_recording(recording_id):
     # Tutaj pobieram z bazy rekord o zadanym id i dostaję obiekt
     recording = ECGRecording.query.get(recording_id)
-    recording_data_with_time = get_raw_recording_data(recording, 0, 30)
+    recording_data_with_time = get_raw_recording_data(recording, 0, 10)
+    recording_true_qrs_with_time = get_recording_true_qrs_with_time(recording)
+
     r_waves_from_algorithms = calculate_qrs_labels(recording, recording_data_with_time)
 
     RR_means = {
@@ -69,12 +73,23 @@ def show_recording(recording_id):
         for algorithm_name, labels in r_waves_from_algorithms.items()
     }
 
+    print(RR_means)
+
+
+    # quality = {
+    #    algorithm_name: calculate_quality(recording.plot_count, recording_true_qrs_with_time, r_waves_from_algorithms[algorithm_name])
+    #    for algorithm_name, labels in r_waves_from_algorithms.items()
+    #    }
+    #
+    # print(quality)
+
     return render_template(
         'ecg_view.html',
         recording=recording,
         recording_data=recording_data_with_time,
         r_waves_from_algorithms=r_waves_from_algorithms,
         RR_means=RR_means
+
     )
 
 @app.route("/new_patient", methods=['POST'])
@@ -141,25 +156,50 @@ def calculate_rr(plot_count, labels):
             for czasy_zalamkow in czasy_zalamkow_rr_per_plot]
 
 
+
+
+def calculate_quality(plot_count, raw_data_time,  labels):
+    quality_per_plot = [[] for i in range(0, plot_count)]
+    compare = qrs_compare.QRSCompare()
+    [sensitivity, specifity] = compare.compare_segmentation(raw_data_time, labels)
+    return [rr_quality_info(sensitivity, specifity)]
+
+
+def rr_quality_info(sensitivity, specifity):
+
+    return {
+        'sensitivity': sensitivity,
+        'specifity': specifity
+    }
+
+
+
 def rr_means_info(rr_means):
 
-    if 60.0/rr_means > 100:
+    if rr_means == 0:
         return {
-            'distance': rr_means,
-            'frequency': 60.0 / rr_means,
-            'diagnosis': 'tachykardia'
-        }
-    if 60.0/rr_means < 60 :
-        return {
-            'distance': rr_means,
-            'frequency': 60.0 / rr_means,
-            'diagnosis': 'bradykardia'
+            'distance': 'brak danych',
+            'frequency': 'brak danych',
+            'diagnosis': 'brak danych'
         }
     else:
-        return {
-            'distance': rr_means,
-            'frequency': 60.0 / rr_means,
-            'diagnosis': 'norma'
+        if 60.0/rr_means > 100:
+            return {
+                'distance': rr_means,
+                'frequency': 60.0 / rr_means,
+                'diagnosis': 'tachykardia'
+            }
+        if 60.0/rr_means < 60 :
+            return {
+                'distance': rr_means,
+                'frequency': 60.0 / rr_means,
+                'diagnosis': 'bradykardia'
+            }
+        else:
+            return {
+                'distance': rr_means,
+                'frequency': 60.0 / rr_means,
+                'diagnosis': 'norma'
         }
 
 def sum_of_differences(array):
@@ -179,6 +219,23 @@ def get_raw_recording_data(recording, start_time, end_time):
 
     return recording_data_with_time
 
+def rTimeWaves(path_string, stop_sample):
+
+    result_qrs = rdann(path_string, 'qrs', start=0, end=stop_sample, types=[])
+    r_waves = []
+
+    for element in result_qrs:
+        if element[1] <= stop_sample:
+            r_waves.append(element[1])
+        else:
+            break
+
+    return r_waves
+
+def get_recording_true_qrs_with_time(recording):
+     url = getattr(recording, "url")
+     head = os.path.splitext(url)[0]
+     return rTimeWaves(head, 10^5)
 
 def calculate_qrs_labels(recording, recording_data_with_time):
     algorithm_results = {}
@@ -194,8 +251,8 @@ def calculate_qrs_labels(recording, recording_data_with_time):
             for zalamek_r in zalamki_r:
                 r_waves.append({"plotId": plot_id, "type": "R", "time": recording_data_with_time[zalamek_r][0]})
 
+        print("Typ: ", type(r_waves))
         algorithm_results[algorithm.name()] = r_waves
-
     return algorithm_results
 
 
