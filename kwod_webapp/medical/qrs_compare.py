@@ -8,8 +8,13 @@ class QRSCompare(object):
 
    def compare_segmentation(self, reference=None, test=None,
                             sampling_rate=250, tol_time=0.05):
-        max_test = max(test)
-        min_test = min(test)
+        if test:
+            max_test = max(test)
+            min_test = min(test)
+        else:
+            max_test = -1
+            min_test = -1
+
         new_reference = []
 
         # Ograniczenie zbioru referencyjnego do potrzeb
@@ -70,28 +75,16 @@ class QRSCompare(object):
             if is_potential_TN:
                 TN.append(element)
 
-        print("-------------------------------------------------------------------------------------------")
+        denom_sensiti = len(TP) + len(FN)
+        if denom_sensiti != 0:
+            sensivity = len(TP) / denom_sensiti
+        else:
+            sensivity = 0
 
-        sensivity = len(TP) / (len(TP) + len(FN))
-        specifity = len(TN) / (len(TN) + len(FP))
-
-        print("REFERENCJA", new_reference)
-        print("TEST", test)
-
-        print("TP", TP)
-        print("FP", FP)
-        print("TN", TN)
-        print("FN", FN)
-
-        print("len TP", len(TP))
-        print("len FP", len(FP))
-        print("len TN", len(TN))
-        print("len FN", len(FN))
-
-        print("sensitivity: ", sensivity)
-        print("specifity:", specifity)
-
-        print("-------------------------------------------------------------------------------------------")
-
+        denom_specifi = (len(TN) + len(FP))
+        if denom_specifi != 0:
+            specifity = len(TN) / denom_specifi
+        else:
+            specifity = 0
 
         return [sensivity, specifity]

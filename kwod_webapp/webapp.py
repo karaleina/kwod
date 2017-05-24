@@ -63,7 +63,7 @@ def recording_list():
 def show_recording(recording_id):
     # Tutaj pobieram z bazy rekord o zadanym id i dostaję obiekt
     recording = ECGRecording.query.get(recording_id)
-    recording_data_with_time = get_raw_recording_data(recording, 0, 30)
+    recording_data_with_time = get_raw_recording_data(recording, 0, 10)
     true_qrs_with_time = get_recording_true_qrs_with_time(recording)
 
     r_waves_from_algorithms = calculate_qrs_labels(recording, recording_data_with_time)

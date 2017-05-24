@@ -59,11 +59,14 @@
                             {% for row in table_row[algorithm_name] %}
                             <tr>
                                 <td>Odprowadzenie {{ loop.index }}</td>
-                                <td id="rr_means_distance_{{ loop.index - 1}}">{{ row['distance'] }}</td>
-                                <td id="rr_means_frequency_{{ loop.index - 1}}">{{ row['frequency'] }}</td>
+
+                                <td id="rr_means_distance_{{ loop.index - 1}}">{{'%0.3f'| format(row['distance'] |float)}}</td>
+                                <td id="rr_means_frequency_{{ loop.index - 1}}">{{'%0.3f'| format(row['frequency'] |float)}}</td>
                                 <td id="rr_means_diagnosis_{{ loop.index - 1}}">{{ row['diagnosis'] }}</td>
-                                <td id="quality_sensitivity_{{ loop.index - 1}}">{{ row['sensitivity'] }}</td>
-                                <td id="quality_specifity_{{ loop.index - 1}}">{{ row['specifity'] }}</td>
+                                <td id="quality_sensitivity_{{ loop.index - 1}}">{{'%0.3f'| format(row['sensitivity'] |float)}}</td>
+                                <td id="quality_specifity_{{ loop.index - 1}}">{{'%0.3f'| format(row['specifity'] |float)}}</td>
+
+
                             </tr>
 
                             {% endfor %}
